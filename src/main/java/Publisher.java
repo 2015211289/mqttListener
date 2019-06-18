@@ -89,8 +89,8 @@ class Publisher {
                 bos.reset();
             }
         }
-
-        queue.add(connection.publish(topic, new AsciiBuffer("SHUTDOWN"), QoS.EXACTLY_ONCE, false));
+        byte[] shutdown = "SHUTDOWN".getBytes();
+        queue.add(connection.publish(topic, new AsciiBuffer(shutdown), QoS.EXACTLY_ONCE, false));
         while( !queue.isEmpty() ) {
             queue.removeFirst().await();
         }

@@ -22,6 +22,7 @@ import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.util.Arrays;
 
 /**
  * Uses an callback based interface to MQTT.  Callback based interfaces
@@ -59,12 +60,12 @@ class Listener {
             }
             public void onPublish(UTF8Buffer topic, Buffer msg, Runnable ack) {
 
-                String body = msg.utf8().toString();
+                byte[] bt = msg.toByteArray();
                 BufferedOutputStream bos=null;
                 FileOutputStream fos=null;
                 File file=null;
 
-                if( "SHUTDOWN".equals(body)) {
+                if(Arrays.equals(bt,"SHUTDOWN".getBytes())) {
                     long diff = System.currentTimeMillis() - start;
                     ack.run();
                     System.out.println(String.format("Received %d in %.2f seconds", count, (1.0*diff/1000.0)));
@@ -89,7 +90,6 @@ class Listener {
                         file=new File("/Users/xieyu/Downloads/test1.tar");
                         fos=new FileOutputStream(file,true);
                         bos=new BufferedOutputStream(fos);
-                        byte[] bt = msg.toByteArray();
                         bos.write(bt);
                         bos.close();
                         fos.close();
