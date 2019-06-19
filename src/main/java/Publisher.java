@@ -30,7 +30,9 @@ import java.io.FileInputStream;
 import java.util.LinkedList;
 
 /**
+ * @author xieyu
  * Uses a Future based API to MQTT.
+ * Send files in 10MB size per frame to reduce Broker workload.
  */
 class Publisher {
 

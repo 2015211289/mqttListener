@@ -25,8 +25,10 @@ import java.io.FileOutputStream;
 import java.util.Arrays;
 
 /**
+ * @author xieyu
  * Uses an callback based interface to MQTT.  Callback based interfaces
  * are harder to use but are slightly more efficient.
+ * Receive frames and combine them to a file.
  */
 class Listener {
 
