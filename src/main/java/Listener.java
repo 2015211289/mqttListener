@@ -19,7 +19,6 @@ import org.fusesource.hawtbuf.*;
 import org.fusesource.mqtt.client.*;
 
 import java.io.BufferedOutputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.util.Arrays;
@@ -28,7 +27,7 @@ import java.util.Arrays;
  * @author xieyu
  * Uses an callback based interface to MQTT.  Callback based interfaces
  * are harder to use but are slightly more efficient.
- * Receive frames and combine them to a file.
+ * Receive frames and combine them to a file. Use shell to load the image from that file.
  */
 class Listener {
 
@@ -36,7 +35,7 @@ class Listener {
 
         String user = env("ACTIVEMQ_USER", "admin");
         String password = env("ACTIVEMQ_PASSWORD", "password");
-        String host = env("ACTIVEMQ_HOST", "192.168.1.123");
+        String host = env("ACTIVEMQ_HOST", "10.109.17.251");
         int port = Integer.parseInt(env("ACTIVEMQ_PORT", "1883"));
         final String destination = arg(args, 0, "docker");
 
@@ -45,7 +44,6 @@ class Listener {
         mqtt.setHost(host, port);
         mqtt.setUserName(user);
         mqtt.setPassword(password);
-
 
         final CallbackConnection connection = mqtt.callbackConnection();
         connection.listener(new org.fusesource.mqtt.client.Listener() {
@@ -74,6 +72,30 @@ class Listener {
                     connection.disconnect(new Callback<Void>() {
                         @Override
                         public void onSuccess(Void value) {
+                            try {
+                                // Set shell path
+                                String path="/Users/xieyu/Downloads/load.sh";
+                                File command = new File(path);
+                                FileOutputStream fos = new FileOutputStream(command);
+                                BufferedOutputStream bs=new BufferedOutputStream(fos);
+
+                                // Write content of shell.
+                                // The filepath need to be consistent with file saved
+                                String top = "#!/bin/bash\n";
+                                String s = top + "docker load -i /Users/xieyu/Downloads/registry1.tar";
+                                bs.write(s.getBytes());
+                                bs.close();
+                                fos.close();
+
+                                // Execute shell file
+                                Process ps = Runtime.getRuntime().exec("chmod 777 " + path);
+                                ps.waitFor();
+                                ps = Runtime.getRuntime().exec(path);
+                                ps.waitFor();
+
+                            }catch (Exception e){
+                                e.fillInStackTrace();
+                            }
                             System.exit(0);
                         }
                         @Override
@@ -89,7 +111,7 @@ class Listener {
                     count ++;
                     System.out.println(String.format("Received %d messages.", count));
                     try {
-                        file=new File("/Users/xieyu/Downloads/test1.tar");
+                        file=new File("/Users/xieyu/Downloads/registry1.tar");
                         fos=new FileOutputStream(file,true);
                         bos=new BufferedOutputStream(fos);
                         bos.write(bt);

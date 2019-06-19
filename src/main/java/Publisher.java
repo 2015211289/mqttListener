@@ -23,28 +23,49 @@ import org.fusesource.mqtt.client.FutureConnection;
 import org.fusesource.mqtt.client.MQTT;
 import org.fusesource.mqtt.client.QoS;
 
-import java.io.BufferedInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
+import java.io.*;
 import java.util.LinkedList;
 
 /**
  * @author xieyu
  * Uses a Future based API to MQTT.
- * Send files in 10MB size per frame to reduce Broker workload.
+ * Create shell file to execute save command in Docker.
+ * Send tar of Docker images in 10MB size per frame to reduce Broker workload.
  */
 class Publisher {
 
     public static void main(String []args) throws Exception {
 
+        // Set shell path
+        String path="/Users/xieyu/Downloads/save.sh";
+        File command = new File(path);
+        FileOutputStream fos = new FileOutputStream(command);
+        BufferedOutputStream bs=new BufferedOutputStream(fos);
+
+        // Write content of shell
+        String top = "#!/bin/bash\n";
+        String s = top + "docker save -o /Users/xieyu/Downloads/registry.tar registry";
+        bs.write(s.getBytes());
+        bs.close();
+        fos.close();
+
+        // Execute shell file
+        Process ps = Runtime.getRuntime().exec("chmod 777 " + path);
+        ps.waitFor();
+        ps = Runtime.getRuntime().exec(path);
+        ps.waitFor();
+
+        // Set mqtt
         String user = env("ACTIVEMQ_USER", "admin");
         String password = env("ACTIVEMQ_PASSWORD", "password");
-        String host = env("ACTIVEMQ_HOST", "192.168.1.123");
+        // Set Activemq IP address and port.
+        String host = env("ACTIVEMQ_HOST", "10.109.17.251");
         int port = Integer.parseInt(env("ACTIVEMQ_PORT", "1883"));
         final String destination = arg(args, 0, "docker");
 
-        File file= new File("/Users/xieyu/Downloads/test.tar");
+        // Choose file to send
+        // The file need to be consistent with file in shell.
+        File file= new File("/Users/xieyu/Downloads/registry.tar");
         FileInputStream is= new FileInputStream(file);
         BufferedInputStream in=null;
         ByteArrayOutputStream bos=null;
@@ -91,6 +112,8 @@ class Publisher {
                 bos.reset();
             }
         }
+
+        // Send finish sign
         byte[] shutdown = "SHUTDOWN".getBytes();
         queue.add(connection.publish(topic, new AsciiBuffer(shutdown), QoS.EXACTLY_ONCE, false));
         while( !queue.isEmpty() ) {
